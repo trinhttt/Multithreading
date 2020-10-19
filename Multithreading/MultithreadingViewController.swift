@@ -42,7 +42,7 @@ class MultithreadingViewController: UIViewController {
 
 extension MultithreadingViewController: UITableViewDataSource {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return 9
+        return 10
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
@@ -80,15 +80,18 @@ extension MultithreadingViewController: UITableViewDataSource {
             cell.textLabel?.text = "Download image serially"
             cell.detailTextLabel?.text = "Download image serially"
         case 5:
+            cell.textLabel?.text = "Operations"
+            cell.detailTextLabel?.text = "executes its queued Operation objects based on their priority and readiness"
+        case 6:
             cell.textLabel?.text = "Operation Blocks"
             cell.detailTextLabel?.text = "Execute several blocks concurrently"
-        case 6:
+        case 7:
             cell.textLabel?.text = "Dispatch Groups"
             cell.detailTextLabel?.text = "Perform groups of task synchronously and be notified upon completion"
-        case 7:
+        case 8:
             cell.textLabel?.text = "Dispatch Barrier"
             cell.detailTextLabel?.text = "Create a synchronization point within a concurrent queue "
-        case 8:
+        case 9:
             cell.textLabel?.text = "Dispatch Semaphore"
             cell.detailTextLabel?.text = "Can be used to control access to a resource across multiple execution threads"
         default:
@@ -121,12 +124,14 @@ extension MultithreadingViewController: UITableViewDelegate {
         case 4:
             downloadImage()
         case 5:
-            doBlockOperations()
+            doOperationQueue()
         case 6:
-            doDispatchGroups()
+            doBlockOperations()
         case 7:
-            doDispatchBarrier()
+            doDispatchGroups()
         case 8:
+            doDispatchBarrier()
+        case 9:
             doDispatchSemaphore()
         default:
             break

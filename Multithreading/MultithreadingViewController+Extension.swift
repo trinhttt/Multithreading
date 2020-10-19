@@ -173,12 +173,18 @@ extension MultithreadingViewController {
     
     // MARK: - Block Operations
     func doBlockOperations() {
-        
         // Use Block Operation to execute several blocks at once without having to create separate operation objects for each. Order executed is NOT guaranteed
         var blockOperations = [BlockOperation]()
         
-        for number in intArray {
-            let operation = BlockOperation(block: { print(number) })
+        for _ in 0...3 {
+            let operation = BlockOperation(
+                block: {
+                    print("------------")
+                    for int in self.intArray2 {
+                        print(int)
+                    }
+                    
+                })
             blockOperations.append(operation)
         }
         
@@ -187,10 +193,36 @@ extension MultithreadingViewController {
         
         // Add operation blocks to our queue
         blockOperations.forEach {
-            
             operationQueue.addOperation($0)
         }
     }
+    
+    class CustomOperation: Operation {
+        let intArray = [1, 2, 3, 4, 5]
+
+        override func main() {
+            for int in intArray {
+                print(int)
+            }
+        }
+    }
+    
+    // MARK: - Operation Queue
+    func doOperationQueue() {
+        let operationQueue = OperationQueue()
+        operationQueue.name = "doOperationQueue"
+        operationQueue.maxConcurrentOperationCount = 1
+        
+        var operations = [Operation]()
+        for _ in 0...3 {
+            let operation = CustomOperation()
+            operation.completionBlock = { print("done") }
+            operations.append(operation)
+        }
+    
+        operationQueue.addOperations(operations, waitUntilFinished: false)
+    }
+    
     
     //MARK: - Dispatch Barrier
     
