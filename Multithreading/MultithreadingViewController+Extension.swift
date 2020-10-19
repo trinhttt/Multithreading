@@ -6,7 +6,7 @@
 //  Copyright © 2020 Trinh Thai. All rights reserved.
 //
 
-import Foundation
+import UIKit
 
 extension MultithreadingViewController {
     
@@ -55,28 +55,38 @@ extension MultithreadingViewController {
         }
     }
     
-    // MARK: - Block Operations
-    func doBlockOperations() {
-        
-        // Use Block Operation to execute several blocks at once without having to create separate operation objects for each. Order executed is NOT guaranteed
-        var blockOperations = [BlockOperation]()
-        
-        for number in intArray {
-            let operation = BlockOperation(block: { print(number) })
-            blockOperations.append(operation)
+    func run(queue: DispatchQueue, times: Int) {
+        (0..<times).forEach { i in
+            queue.sync {
+                print("\(i) operation 1")
+                queue.async { // Do not block current thread
+                    print("\(i) operation 1.1")
+                }
+            }
+            queue.sync {
+                print("\(i) operation 2")
+            }
         }
-        
-        // You MUST add the block operation to an operation queue in order to execute it
-        let operationQueue = OperationQueue()
-        
-        // Add operation blocks to our queue
-        blockOperations.forEach {
-            
-            operationQueue.addOperation($0)
-        }
+
     }
     
-    //MARK: Dispatch Group
+    // MARK: - Serial Task
+    func doSerialTasks() {
+        let serialQueue = DispatchQueue(label: "squeue")
+//        let serialQueue = DispatchQueue.main
+        ///Change main queue
+
+        run(queue: serialQueue, times: 3)
+    }
+        
+    // MARK: - Concurrent Task
+    func doConcurrentTasks() {
+        let concurrentQueue = DispatchQueue.global()
+//        let concurrentQueue = DispatchQueue(label: "cqueue",attributes: .concurrent)
+        run(queue: concurrentQueue, times: 3)
+    }
+    
+    //MARK: - Dispatch Group
     
     func doDispatchGroups() {
         
@@ -103,8 +113,86 @@ extension MultithreadingViewController {
         
     } // end function
     
+    //// Download 5 image serially - only download 1 image at a time( when download a image successfully, then download another image)
+    //WAY 1:
+    func downloadImage() {
+        let dispatchGroup = DispatchGroup()
+        let queue = DispatchQueue.global(qos: .userInteractive)
+        
+        dispatchGroup.enter()
+        print("start \(index)")
+        queue.async() {
+            let url = URL(string: self.urls[self.index])
+            do {
+                let data = try Data(contentsOf: url!)
+                DispatchQueue.main.async {
+                    print("done \(self.index)")
+                    //self.imageImageViews[self.index].image = UIImage(data: data)
+                    self.index += 1
+                    dispatchGroup.leave()
+                }
+            } catch {
+                print("error")
+            }
+        }
+        
+        dispatchGroup.notify(queue: .main) {
+            if self.index < self.urls.count {
+                self.downloadImage()
+            } else {
+                self.index = 0
+            }
+        }
+    }
+
+    // WAY 2:
+    func downloadImage(urlString: String, completion: @escaping (UIImage) -> Void) {
+        guard let url = URL(string: urlString) else { return }
+        let task = URLSession.shared.dataTask(with: url) { (data, response, error) in
+            if let data = data, let image = UIImage(data:data) {
+                DispatchQueue.main.async {
+                    completion(image)
+                }
+            }
+        }
+        task.resume()
+    }
     
-    //MARK: Dispatch Barrier
+    func downloadImages() {
+        print("start \(index)")
+        downloadImage(urlString: urls[index]) { (image) in
+            print("done \(self.index)")
+            
+//            self.imageImageViews[self.index].image = image
+            self.index += 1
+            if self.index < self.urls.count {
+                self.downloadImages()
+            }
+        }
+    }
+    
+    // MARK: - Block Operations
+    func doBlockOperations() {
+        
+        // Use Block Operation to execute several blocks at once without having to create separate operation objects for each. Order executed is NOT guaranteed
+        var blockOperations = [BlockOperation]()
+        
+        for number in intArray {
+            let operation = BlockOperation(block: { print(number) })
+            blockOperations.append(operation)
+        }
+        
+        // You MUST add the block operation to an operation queue in order to execute it
+        let operationQueue = OperationQueue()
+        
+        // Add operation blocks to our queue
+        blockOperations.forEach {
+            
+            operationQueue.addOperation($0)
+        }
+    }
+    
+    //MARK: - Dispatch Barrier
     
     func doDispatchBarrier() {
         
