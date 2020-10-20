@@ -225,34 +225,79 @@ extension MultithreadingViewController {
     
     
     //MARK: - Dispatch Barrier
-    
+    /*
+    => Nghĩa là những việc đc submit trước barrier sẽ hoàn thành -> tới barrier work item thực thi ->  thực thi xong -> trả lại schedule cho những item đc submit sau barrier
+
+    VD sau:
+    Những thằng trước barrier (5 thằng ) dù đc thực hiện không theo thứ tự mỗi lần gọi nhưng đảm bảo là phải được thực thi trước khi tường barrier thực thi (here:  print ynchronized Task 2 và  call downloadImage()) rồi mới tới những thằng sau
+ */
     func doDispatchBarrier() {
         
         // All items submitted to the queue prior to the dispatch barrier must complete before the barrier will execute.
         
         //Create concurrent dispatch queue (labels are for debugging purposes)
         let concurrentQueue = DispatchQueue(label: "Concurrent", attributes: .concurrent)
-        
-        for i in 0..<charArray.count/2 {
-            
-            concurrentQueue.async { [unowned self] in
-                print(self.charArray[i])
+        for i in 0...4 {
+            concurrentQueue.async {
+                print(i)
             }
         }
         
         //Create synchronization point between asynchronous tasks (solves read/write issues)
+        concurrentQueue.async {
+            print("-----Synchronized Task 1------")
+            
+        }
+        
+
         concurrentQueue.async(flags: .barrier) {
-            print("-----Synchronized Tasks------")
+            print("-----Synchronized Task 2------")
+            self.downloadImage(urlString: self.urls[1]) { (image) in
+                print("done")
+            }
         }
                 
-        for j in charArray.count/2..<charArray.count {
-            concurrentQueue.async { [unowned self] in
-                print(self.charArray[j])
+        for j in 5...9 {
+            concurrentQueue.async {
+                print(j)
             }
+        }
+        concurrentQueue.async {
+            print("-----Synchronized Task 3------")
         }
     }
     
+    ////ký thuyết
+    /*
+     Thực tế thì cấu trúc của một Semaphore gồm có:
+     + một counter value để cho semaphore biết là đang có bao nhiêu thread sử dụng tài nguyên
+     + một FIFO queue để tracking việc các luông đợi tài nguyên.
+     
+     
+     Resource Request: wait() Khi Semaphore nhận được một request, no sẽ kiểm tra xem counter có lớn hơn 0 hay không:
+     + Nếu lơn hơn, semaphore sẽ giảm sẽ giảm counter và đưa đèn xanh cho thread đó
+     + Ngược lại, thì nó sẽ đẩy yêu cầu sử dụng tài nguyên của thread vào hàng đợi.
+     
+     
+     Resource Release: signal() Khi Semaphore nhận được một signal(), nó sẽ kiểm tra xem trong FIFO queue đó có tiến trình hay luồng nào đang ở trong không:
+     + Nếu có, thì semaphore sẽ kéo tiến trình hoặc luồng đầu tiên từ queue vào và cho phép nó thực thi
+     + Ngược lại, nó sẽ tăng counter lên 1
+     */
     
+    ////GIẢI THÍCH
+    /*
+     Với ban đầu value = 1 nên chạy tới wait() do value > 1 nên "wait fisnished" đầu tiền ( kid 1 / 2 / 3 k biết tại async), value gỉam 1(=0),
+     thực thi xong kid đầu tiên đó - chạy vào signal() và tăng value lên 1
+     sau đó mới "wait fisnished" thứ 2 mới bắt đầu đc start ( do value > 0)
+
+     => Túm tại là chỉ có value (count) đc chạy tại 1 thời điểm (value do mình quyết từ đầu)
+     */
+    
+    
+    /*
+     Với value = 2: Khi set lên 2, thì có 2 thằng đc vào share resource cùng lúc và có "wait fisnished" cạnh nhau
+
+     */
     //MARK: - Dispatch Semaphore
     func doDispatchSemaphore() {
         

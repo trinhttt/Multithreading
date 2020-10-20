@@ -1,3 +1,3 @@
 # Multithreading
-## Image:
-[![image](https://iili.io/30exUv.png)](https://freeimage.host/i/30exUv)
+## Content + Image:
+[![image](https://iili.io/3EhlBs.png)](https://freeimage.host/i/3EhlBs)
